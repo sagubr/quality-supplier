@@ -1,58 +1,68 @@
 import { logger } from "../../config/logger.config";
 import { queueRepository } from "./queue.repository";
 import {
-	QueueJobPayloadSchema,
 	QueueJob,
+	QueueJobPayloadSchema,
+	QueueJobStatus,
 	QueueJobType,
-	QueueJobPayload,
 } from "./queue.types";
 
 class QueueService {
-	async createJob(
+	async dispatch(
+		workerId: string,
 		type: QueueJobType,
-		payload: QueueJobPayload,
-		maxAttempts = 5,
-		availableAt?: Date,
-	) {
-		return await queueRepository.createJob(
-			type,
-			payload,
-			maxAttempts,
-			availableAt,
-		);
-	}
-
-	async getNextPendingJob(): Promise<QueueJob | null> {
-		const job = await queueRepository.getNextPendingJob();
+	): Promise<QueueJob | null> {
+		const job = await queueRepository.fetchAndLockNextJob(workerId, type);
 		if (!job) return null;
+
 		try {
 			const payload = QueueJobPayloadSchema.parse(job.payload);
 			return { ...job, payload };
 		} catch (err) {
-			logger.error(
-				{ err, jobId: job.id },
-				"Payload inválido, marcando job como FAILED",
-			);
+			logger.error({ err, jobId: job.id }, "Invalid payload");
 
-			await queueRepository.markJobAsFailed(job.id, err);
+			await queueRepository.updateJob(job.id, {
+				status: QueueJobStatus.FAILED,
+				last_error: String(err),
+				locked_at: null,
+				locked_by: null,
+			});
+
 			return null;
 		}
 	}
 
-	async markJobAsLock(jobId: number, workerId: string) {
-		return await queueRepository.markJobAsLock(jobId, workerId);
+	async complete(jobId: number) {
+		await queueRepository.updateJob(jobId, {
+			status: QueueJobStatus.DONE,
+			locked_at: null,
+			locked_by: null,
+		});
 	}
 
-	async markJobAsDone(jobId: number) {
-		return await queueRepository.markJobAsDone(jobId);
+	async fail(job: QueueJob, error: any) {
+		const newAttempts = job.attempts + 1;
+		const shouldFail = newAttempts >= job.max_attempts;
+		const backoffMs = Math.pow(2, newAttempts) * 1000;
+
+		await queueRepository.updateJob(job.id, {
+			attempts: newAttempts,
+			status: shouldFail ? QueueJobStatus.FAILED : QueueJobStatus.PENDING,
+			next_run_at: shouldFail ? null : new Date(Date.now() + backoffMs),
+			last_error: error?.message ?? String(error),
+			locked_at: null,
+			locked_by: null,
+		});
+
+		return shouldFail;
 	}
 
-	async markJobAsFailed(jobId: number, error: any) {
-		return await queueRepository.markJobAsFailed(jobId, error);
+	async cleanup(days = 30) {
+		await queueRepository.deleteOldProcessedJobs(days);
 	}
 
-	async getRetryableJobs(limit = 10) {
-		return await queueRepository.getRetryableJobs(limit);
+	async watchdog() {
+		await queueRepository.resetStaleJobs(5);
 	}
 }
 

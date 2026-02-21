@@ -52,8 +52,8 @@
           "autoincrement": false,
           "default": 5
         },
-        "available_at": {
-          "name": "available_at",
+        "next_run_at": {
+          "name": "next_run_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,

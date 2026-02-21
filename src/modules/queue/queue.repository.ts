@@ -1,101 +1,85 @@
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
+import { RowDataPacket } from "mysql2";
 import { db } from "../../config/db.config";
 import { queueJobs } from "./queue.schema";
-import { QueueJobType, QueueJobStatus, QueueJob } from "./queue.types";
+import { QueueJob, QueueJobStatus, QueueJobType } from "./queue.types";
+
+type RawQueueJob = Omit<QueueJob, "payload"> & { payload: unknown };
 
 class QueueRepository {
-	async createJob(
-		type: QueueJobType,
-		payload: unknown,
-		maxAttempts = 5,
-		availableAt?: Date,
-	) {
-		return await db.insert(queueJobs).values({
+	async createJob(type: QueueJobType, payload: unknown, maxAttempts = 5) {
+		await db.insert(queueJobs).values({
 			type,
 			payload,
 			max_attempts: maxAttempts,
-			available_at: availableAt ?? new Date(),
+			attempts: 0,
+			next_run_at: new Date(),
 			status: QueueJobStatus.PENDING,
 		});
 	}
 
-	async getNextPendingJob(): Promise<
-		(Omit<QueueJob, "payload"> & { payload: unknown }) | null
-	> {
-		const [job] = await db
-			.select()
-			.from(queueJobs)
-			.where(
-				sql`
-					${queueJobs.status} = ${QueueJobStatus.PENDING} AND
-					${queueJobs.locked_at} IS NULL AND
-					${queueJobs.available_at} <= ${new Date()}
-				`,
-			)
-			.orderBy(queueJobs.available_at)
-			.limit(1);
+	async fetchAndLockNextJob(workerId: string, type: QueueJobType): Promise<RawQueueJob | null> {
+		return await db.transaction(async (tx) => {
+			const result = await tx.execute(sql`
+				SELECT *
+				FROM ${queueJobs}
+				WHERE status = 'PENDING'
+				 	AND type = ${type}
+					AND attempts < max_attempts
+					AND next_run_at <= NOW()
+				ORDER BY created_at
+				LIMIT 1
+				FOR UPDATE SKIP LOCKED
+			`);
 
-		if (!job) return null;
+			const rows = result[0];
 
-		return job;
+			if (!Array.isArray(rows)) {
+				return null;
+			}
+
+			const job = rows[0] as RawQueueJob | undefined;
+			if (!job) return null;
+
+			await tx
+				.update(queueJobs)
+				.set({
+					status: QueueJobStatus.PROCESSING,
+					locked_at: new Date(),
+					locked_by: workerId,
+					updated_at: new Date(),
+				})
+				.where(eq(queueJobs.id, job.id));
+
+			return job;
+		});
 	}
 
-	async markJobAsLock(jobId: number, workerId: string) {
+	async updateJob(jobId: number, data: Partial<QueueJob>) {
 		await db
 			.update(queueJobs)
-			.set({
-				locked_at: new Date(),
-				locked_by: workerId,
-				status: QueueJobStatus.PROCESSING,
-				updated_at: new Date(),
-			})
-			.where(
-				sql`${queueJobs.id} = ${jobId} AND ${queueJobs.locked_at} IS NULL`,
-			);
+			.set({ ...data, updated_at: new Date() })
+			.where(eq(queueJobs.id, jobId));
 	}
 
-	async markJobAsDone(jobId: number) {
-		await db
-			.update(queueJobs)
-			.set({
-				status: QueueJobStatus.DONE,
-				updated_at: new Date(),
-				locked_at: null,
-				locked_by: null,
-			})
-			.where(sql`${queueJobs.id} = ${jobId}`);
+	async deleteOldProcessedJobs(days = 30) {
+		await db.execute(sql`
+			DELETE FROM ${queueJobs}
+			WHERE status IN (${QueueJobStatus.DONE})
+			AND updated_at < NOW() - INTERVAL ${days} DAY
+			AND (status = 'DONE' OR attempts >= max_attempts)
+		`);
 	}
 
-	async markJobAsFailed(jobId: number, error: any) {
-		await db
-			.update(queueJobs)
-			.set({
-				attempts: sql`${queueJobs.attempts} + 1`,
-				status: QueueJobStatus.FAILED,
-				last_error: error,
-				updated_at: new Date(),
-				locked_at: null,
-				locked_by: null,
-			})
-			.where(sql`${queueJobs.id} = ${jobId}`);
-	}
-
-	async getRetryableJobs(
-		limit = 10,
-	): Promise<(Omit<QueueJob, "payload"> & { payload: unknown })[]> {
-		const jobs = await db
-			.select()
-			.from(queueJobs)
-			.where(
-				sql`
-				${queueJobs.status} = ${QueueJobStatus.FAILED} AND
-				${queueJobs.attempts} < ${queueJobs.max_attempts}
-			`,
-			)
-			.orderBy(queueJobs.updated_at)
-			.limit(limit);
-
-		return jobs;
+	async resetStaleJobs(timeoutMinutes = 5) {
+		await db.execute(sql`
+			UPDATE ${queueJobs}
+			SET status = 'PENDING',
+				locked_at = NULL,
+				locked_by = NULL
+			WHERE status = 'PROCESSING'
+				AND locked_at < NOW() - INTERVAL ${timeoutMinutes} MINUTE
+		`);
 	}
 }
 

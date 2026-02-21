@@ -18,7 +18,7 @@ export const queueJobs = mysqlTable("queue_jobs", {
 		.notNull(),
 	attempts: int("attempts").default(0).notNull(),
 	max_attempts: int("max_attempts").default(5).notNull(),
-	available_at: timestamp("available_at").defaultNow().notNull(),
+	next_run_at: timestamp("next_run_at").defaultNow(),
 	locked_at: timestamp("locked_at"),
 	locked_by: varchar("locked_by", { length: 100 }),
 	last_error: json("last_error"),

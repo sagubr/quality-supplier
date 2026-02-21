@@ -11,13 +11,18 @@ export enum QueueJobStatus {
 	FAILED = "FAILED",
 }
 
-export const QueueJobPayloadSchema = z
+const EmailPayloadSchema = z
 	.object({
+		type: z.literal(QueueJobType.EMAIL),
 		to: z.email(),
 		subject: z.string(),
 		body: z.string(),
 	})
 	.strict();
+
+export const QueueJobPayloadSchema = z.discriminatedUnion("type", [
+	EmailPayloadSchema,
+]);
 
 export type QueueJobPayload = z.infer<typeof QueueJobPayloadSchema>;
 
@@ -28,7 +33,7 @@ export interface QueueJob {
 	status: QueueJobStatus;
 	attempts: number;
 	max_attempts: number;
-	available_at: Date;
+	next_run_at: Date | null;
 	locked_at: Date | null;
 	locked_by: string | null;
 	last_error: any;
