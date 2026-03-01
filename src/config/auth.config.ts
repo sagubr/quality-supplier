@@ -1,6 +1,6 @@
 import { env } from "./env.config";
 
-export const authConfig = {
+export const auth = {
 	jwtSecret: env.JWT_SECRET,
 	jwtExpiresIn: env.JWT_EXPIRES_IN,
 };

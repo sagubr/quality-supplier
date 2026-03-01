@@ -1,13 +1,20 @@
-import { NodeCacheEngine } from "./node-cache.engine";
-import { CacheKeyResolver } from "./cache.resolver";
-import { CacheProvider } from "./cache.provider";
-import { CACHE_SCHEMA } from "./cache.schema";
+import { env } from "@/config/env.config";
+import { NodeCacheProvider } from "./providers/node-cache.provider";
+import { RedisCacheProvider } from "./providers/redis.provider";
+
+const providers = {
+	redis: RedisCacheProvider,
+	"node-cache": NodeCacheProvider,
+};
 
 function createCacheProvider() {
-	const engine = new NodeCacheEngine();
-	const resolver = new CacheKeyResolver();
+	const Provider = providers[env.CACHE_PROVIDER || "node-cache"];
 
-	return new CacheProvider(engine, CACHE_SCHEMA, resolver);
+	if (!Provider) {
+		throw new Error("Invalid cache provider");
+	}
+
+	return new Provider();
 }
 
 export const cacheService = createCacheProvider();

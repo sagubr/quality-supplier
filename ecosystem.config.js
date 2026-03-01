@@ -2,8 +2,8 @@ module.exports = {
 	apps: [
 		{
 			name: "quality-api",
-			script: "dist/apps/api/server.js",
-			instances: "max",
+			script: "dist/src/server.js",
+			instances: "1",
 			exec_mode: "cluster",
 			watch: false,
 			env: {
@@ -17,7 +17,7 @@ module.exports = {
 		},
 		{
 			name: "quality-worker",
-			script: "dist/apps/worker/worker.bootstrap.js",
+			script: "dist/src/infra/queue/queue.worker.js",
 			instances: 1,
 			exec_mode: "fork",
 			watch: false,
@@ -28,21 +28,6 @@ module.exports = {
 			env_production: {
 				NODE_ENV: "production",
 				SERVICE_NAME: "quality-worker",
-			},
-		},
-		{
-			name: "quality-watchdog",
-			script: "dist/apps/watchdog/watchdog.bootstrap.js",
-			instances: 1,
-			exec_mode: "fork",
-			watch: false,
-			env: {
-				NODE_ENV: "development",
-				SERVICE_NAME: "quality-watchdog",
-			},
-			env_production: {
-				NODE_ENV: "production",
-				SERVICE_NAME: "quality-watchdog",
 			},
 		},
 	],

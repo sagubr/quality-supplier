@@ -1,21 +1,21 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { success } from "@/shared/http/response";
 import { createNotificationSchema } from "./schema";
-import { notificationService } from "./notification.factory";
+import { notificationService } from "./notification.service";
 
-export async function sendTestEmailSuccess(
-	request: FastifyRequest,
-	reply: FastifyReply,
-) {
-	const body = createNotificationSchema.parse(request.body);
-	await notificationService.sendTestEmailSuccess(body);
-	return reply.send(success(null, "Notification sent"));
+export class NotificationController {
+	constructor(private service = notificationService) {}
+
+	async sendTestEmailSuccess(request: FastifyRequest, reply: FastifyReply) {
+		const body = createNotificationSchema.parse(request.body);
+		await this.service.sendTestEmailSuccess(body);
+		return reply.send(success(null, "Notification scheduled"));
+	}
+
+	async sendTestEmailError(request: FastifyRequest, reply: FastifyReply) {
+		await this.service.sendTestEmailError();
+		return reply.send(success());
+	}
 }
 
-export async function sendTestEmailError(
-	request: FastifyRequest,
-	reply: FastifyReply,
-) {
-	await notificationService.sendTestEmailError();
-	return reply.send(success());
-}
+export const notificationController = new NotificationController();

@@ -45,7 +45,7 @@ const transportsByEnv: Record<string, LoggerOptions["transport"]> = {
 	},
 };
 
-const loggerConfig: LoggerOptions = {
+const loggerSettings: LoggerOptions = {
 	level: env.LOG_LEVEL || "info",
 	base: {
 		service: env.SERVICE_NAME || "app",
@@ -54,4 +54,4 @@ const loggerConfig: LoggerOptions = {
 	transport: transportsByEnv[env.NODE_ENV] ?? transportsByEnv.production,
 };
 
-export const logger = pino(loggerConfig);
+export const logger = pino(loggerSettings);

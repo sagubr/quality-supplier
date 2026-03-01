@@ -1,18 +1,28 @@
 import sgMail from "@sendgrid/mail";
-import { IEmailService } from "../email.interface";
-import { emailConfig } from "../email.config";
+import { IEmailProvider, EmailPayload } from "../email.interface";
+import { env } from "@/config/env.config";
 
-export class SendgridProvider implements IEmailService {
+export class SendgridProvider implements IEmailProvider {
 	constructor() {
-		sgMail.setApiKey(emailConfig.sendgridApiKey!);
+		if (!env.SENDGRID_API_KEY) {
+			throw new Error("SENDGRID_API_KEY is required");
+		}
+		sgMail.setApiKey(env.SENDGRID_API_KEY);
 	}
 
-	async send(to: string, subject: string, html: string) {
+	async send(payload: EmailPayload): Promise<void> {
+		if (!payload.body || !payload.to || !payload.subject) {
+			throw new Error("Email payload incomplete: to, subject and html are required");
+		}
+
 		await sgMail.send({
-			to,
-			from: emailConfig.from,
-			subject,
-			html,
+			to: payload.to,
+			from: env.EMAIL_FROM_ADDRESS,
+			subject: payload.subject,
+			html: payload.body,
+			cc: payload.cc,
+			bcc: payload.bcc,
+			replyTo: payload.replyTo,
 		});
 	}
 }

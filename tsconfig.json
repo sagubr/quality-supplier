@@ -4,9 +4,9 @@
 		"module": "CommonJS",
 		"moduleResolution": "node",
 		"rootDir": ".",
-		"baseUrl": "src",
+		"baseUrl": ".",
 		"paths": {
-			"@/*": ["*"]
+			"@/*": ["src/*"]
 		},
 		"outDir": "./dist",
 		"strict": true,

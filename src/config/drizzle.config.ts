@@ -1,7 +1,7 @@
 import type { Config } from "drizzle-kit";
 import { env } from "./env.config";
 
-const config: Config = {
+export const drizzle: Config = {
 	schema: "./src/modules/**/*.schema.ts",
 	out: "./drizzle/migrations",
 	dialect: "mysql",
@@ -17,5 +17,3 @@ const config: Config = {
 	},
 	verbose: true
 };
-
-export default config;

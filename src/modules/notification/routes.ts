@@ -1,9 +1,6 @@
 import { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import {
-	sendTestEmailSuccess,
-	sendTestEmailError,
-} from "./notification.controller";
+import { notificationController as controller } from "./notification.controller";
 import { createNotificationSchema } from "./schema";
 
 export default async function notificationRouter(fastify: FastifyInstance) {
@@ -16,7 +13,7 @@ export default async function notificationRouter(fastify: FastifyInstance) {
 				body: createNotificationSchema,
 			},
 		},
-		sendTestEmailSuccess,
+		controller.sendTestEmailSuccess.bind(controller),
 	);
 
 	app.post(
@@ -26,6 +23,6 @@ export default async function notificationRouter(fastify: FastifyInstance) {
 				body: createNotificationSchema,
 			},
 		},
-		sendTestEmailError,
+		controller.sendTestEmailError.bind(controller),
 	);
 }

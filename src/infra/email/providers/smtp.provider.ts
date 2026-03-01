@@ -1,23 +1,39 @@
 import nodemailer from "nodemailer";
-import { IEmailService } from "../email.interface";
-import { emailConfig } from "../email.config";
+import { IEmailProvider, EmailPayload } from "../email.interface";
+import { env } from "@/config/env.config";
 
-export class SmtpProvider implements IEmailService {
-	private transporter = nodemailer.createTransport({
-		host: emailConfig.smtp.host,
-		port: emailConfig.smtp.port,
-		auth: {
-			user: emailConfig.smtp.user,
-			pass: emailConfig.smtp.pass,
-		},
-	});
+export class SmtpProvider implements IEmailProvider {
+	private transporter: nodemailer.Transporter;
 
-	async send(to: string, subject: string, html: string) {
+	constructor() {
+		if (
+			!env.SMTP_HOST ||
+			!env.SMTP_PORT ||
+			!env.SMTP_USER ||
+			!env.SMTP_PASS
+		) {
+			throw new Error("SMTP configuration is incomplete");
+		}
+
+		this.transporter = nodemailer.createTransport({
+			host: env.SMTP_HOST,
+			port: env.SMTP_PORT,
+			auth: {
+				user: env.SMTP_USER,
+				pass: env.SMTP_PASS,
+			},
+		});
+	}
+
+	async send(payload: EmailPayload): Promise<void> {
 		await this.transporter.sendMail({
-			from: `"${emailConfig.from.name}" <${emailConfig.from.email}>`,
-			to,
-			subject,
-			html,
+			from: env.EMAIL_FROM_NAME,
+			to: payload.to,
+			subject: payload.subject,
+			html: payload.body,
+			cc: payload.cc,
+			bcc: payload.bcc,
+			replyTo: payload.replyTo,
 		});
 	}
 }

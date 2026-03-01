@@ -10,7 +10,7 @@ vi.mock("@/modules/notifications/notification.factory", () => {
 });
 
 async function createApp() {
-	const { buildApp } = await import("@/apps/api/app");
+	const { buildApp } = await import("@/app");
 	const app = await buildApp();
 	await app.ready();
 	return app;

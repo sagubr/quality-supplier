@@ -1,21 +1,21 @@
-import { emailConfig } from "./email.config";
-import { IEmailService } from "./email.interface";
+import { env } from "@/config/env.config";
 import { SendgridProvider } from "./providers/sendgrid.provider";
 import { SmtpProvider } from "./providers/smtp.provider";
+import { IEmailProvider } from "./email.interface";
 
-const strategies = {
+const providers = {
 	sendgrid: SendgridProvider,
 	smtp: SmtpProvider,
 };
 
-function createEmailService(): IEmailService {
-	const Strategy = strategies[emailConfig.provider];
+function createEmailProvider(): IEmailProvider {
+	const Provider = providers[env.EMAIL_PROVIDER];
 
-	if (!Strategy) {
-		throw new Error("Invalid email provider");
+	if (!Provider) {
+		throw new Error(`Invalid email provider: ${env.EMAIL_PROVIDER}`);
 	}
 
-	return new Strategy();
+	return new Provider();
 }
 
-export const emailService = createEmailService();
+export const emailProvider = createEmailProvider();

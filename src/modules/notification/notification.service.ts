@@ -1,16 +1,22 @@
-import { IEmailService } from "@/infra/email/email.interface";
+import { MAIN_QUEUE } from "@/const/queue";
+import { QueueFactory } from "@/infra/queue/queue.factory";
+import { QueueJobType } from "@/infra/queue/queue.types";
 import { NotificationLimitExceeded } from "./errors/notification.error";
 import { CreateNotificationInput } from "./schema";
-import { INotificationService } from "./notification.interface";
 
-export class NotificationService implements INotificationService {
-	constructor(private emailService: IEmailService) {}
-
-	async sendTestEmailSuccess(email: CreateNotificationInput): Promise<void> {
-		await this.emailService.send(email.to, email.subject, email.body);
+class NotificationService {
+	async sendTestEmailSuccess(
+		payload: CreateNotificationInput,
+	): Promise<void> {
+		QueueFactory.getQueue(MAIN_QUEUE).add(QueueJobType.EMAIL, payload, {
+			attempts: 3,
+			backoff: { type: "exponential", delay: 2000 },
+		});
 	}
 
 	async sendTestEmailError(): Promise<never> {
 		throw new NotificationLimitExceeded();
 	}
 }
+
+export const notificationService = new NotificationService();

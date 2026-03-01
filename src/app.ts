@@ -10,6 +10,7 @@ import {
 	validatorCompiler,
 } from "fastify-type-provider-zod";
 import { errorHandler } from "@/middlewares/error.middleware";
+import { serverAdapter } from "@/infra/queue/bullboard.config";
 
 export const buildApp = async () => {
 	const app = Fastify();
@@ -62,6 +63,8 @@ export const buildApp = async () => {
 	app.register(fastifySwaggerUi, {
 		routePrefix: "/docs",
 	});
+
+	app.register(serverAdapter.registerPlugin(), { prefix: "/bull-board" });
 
 	await app.register(router);
 	Sentry.setupFastifyErrorHandler(app);
