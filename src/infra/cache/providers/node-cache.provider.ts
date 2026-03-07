@@ -8,11 +8,7 @@ const options = {
 };
 
 export class NodeCacheProvider implements ICacheProvider {
-	private cache: NodeCache;
-
-	constructor() {
-		this.cache = new NodeCache(options);
-	}
+	constructor(private readonly cache: NodeCache = new NodeCache(options)) {}
 
 	async get<T>(key: string): Promise<T | undefined> {
 		return this.cache.get<T>(key);
@@ -32,5 +28,29 @@ export class NodeCacheProvider implements ICacheProvider {
 
 	async flush(): Promise<void> {
 		this.cache.flushAll();
+	}
+
+	async listKeys(
+		pattern = "*",
+	): Promise<Array<{ key: string; ttl: number; expiresAt?: string }>> {
+		const allKeys = this.cache.keys();
+		const regex = new RegExp(`^${pattern.replace(/\*/g, ".*")}$`);
+		const filteredKeys = allKeys.filter((key) => regex.test(key));
+
+		return filteredKeys.map((key) => {
+			const ttl = this.cache.getTtl(key);
+			const remainingTtl =
+				ttl ? Math.ceil((ttl - Date.now()) / 1000) : -1;
+			const expiresAt =
+				remainingTtl > 0 && ttl ?
+					new Date(ttl).toISOString()
+				:	undefined;
+
+			return {
+				key,
+				ttl: remainingTtl,
+				expiresAt,
+			};
+		});
 	}
 }

@@ -22,7 +22,7 @@ describe("NotificationController Integration", () => {
 
 		const res = await app.inject({
 			method: "POST",
-			url: "/notifications/send-success",
+			url: "/api/notifications/send-success",
 			payload: {
 				to: "user@example.com",
 				subject: "Test",
@@ -33,7 +33,7 @@ describe("NotificationController Integration", () => {
 		expect(res.statusCode).toBe(200);
 		expect(res.json()).toEqual({
 			success: true,
-			message: "Notification sent",
+			message: "Notification scheduled",
 		});
 
 		await app.close();

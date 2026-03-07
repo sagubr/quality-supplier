@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createNotificationSchema = z.object({
-	to: z.string().email(),
+	to: z.email(),
 	subject: z.string(),
 	body: z.string(),
 });

@@ -13,6 +13,7 @@ const envSchema = z.object({
 	SERVICE_NAME: z.string().default('quality-supplier'),
 	LOG_LEVEL: z.string().default("info"),
 	CACHE_PROVIDER: z.enum(["redis", "node-cache"]).default("node-cache"),
+	CACHE_ADMIN_TOKEN: z.string().min(32, "CACHE_ADMIN_TOKEN deve ter pelo menos 32 caracteres"),
 	DB_HOST: z.string().min(1, "DB_HOST é obrigatório"),
 	DB_PORT: z.coerce.number().default(3306),
 	DB_USER: z.string().min(1, "DB_USER é obrigatório"),

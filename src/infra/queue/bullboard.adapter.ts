@@ -1,3 +1,5 @@
+import fp from "fastify-plugin";
+import { FastifyInstance } from "fastify";
 import { FastifyAdapter } from "@bull-board/fastify";
 import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
@@ -15,4 +17,8 @@ createBullBoard({
 	serverAdapter: bullboardFastifyAdapter,
 });
 
-export { bullboardFastifyAdapter as serverAdapter };
+export default fp(async (app: FastifyInstance) => {
+	await app.register(bullboardFastifyAdapter.registerPlugin(), {
+		prefix: "/bull-board",
+	});
+});

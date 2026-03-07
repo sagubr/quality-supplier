@@ -2,7 +2,7 @@ import { MAIN_QUEUE } from "@/const/queue";
 import { QueueFactory } from "@/infra/queue/queue.factory";
 import { QueueJobType } from "@/infra/queue/queue.types";
 import { NotificationLimitExceeded } from "./errors/notification.error";
-import { CreateNotificationInput } from "./schema";
+import { CreateNotificationInput } from "./notification.types";
 
 class NotificationService {
 	async sendTestEmailSuccess(

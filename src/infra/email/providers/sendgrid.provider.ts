@@ -17,7 +17,7 @@ export class SendgridProvider implements IEmailProvider {
 
 		await sgMail.send({
 			to: payload.to,
-			from: env.EMAIL_FROM_ADDRESS,
+			from: env.EMAIL_FROM_NAME,
 			subject: payload.subject,
 			html: payload.body,
 			cc: payload.cc,

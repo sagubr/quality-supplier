@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { success } from "@/shared/http/response";
-import { createNotificationSchema } from "./schema";
+import { createNotificationSchema } from "./notification.types";
 import { notificationService } from "./notification.service";
 
 export class NotificationController {

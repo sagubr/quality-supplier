@@ -10,7 +10,8 @@ import {
 	validatorCompiler,
 } from "fastify-type-provider-zod";
 import { errorHandler } from "@/middlewares/error.middleware";
-import { serverAdapter } from "@/infra/queue/bullboard.config";
+import bullboardPlugin from "@/infra/queue/bullboard.adapter";
+import cachePlugin from "@/infra/cache/cache.plugin";
 
 export const buildApp = async () => {
 	const app = Fastify();
@@ -28,7 +29,7 @@ export const buildApp = async () => {
 	app.setValidatorCompiler(validatorCompiler);
 	app.setSerializerCompiler(serializerCompiler);
 
-	app.register(fastifySwagger, {
+	await app.register(fastifySwagger, {
 		openapi: {
 			info: {
 				title: "Quality API",
@@ -48,10 +49,6 @@ export const buildApp = async () => {
 			},
 			servers: [
 				{
-					url: "https://api.example.com",
-					description: "Servidor de produção",
-				},
-				{
 					url: "http://localhost:3005",
 					description: "Servidor local para desenvolvimento",
 				},
@@ -60,18 +57,16 @@ export const buildApp = async () => {
 		transform: jsonSchemaTransform,
 	});
 
-	app.register(fastifySwaggerUi, {
+	await app.register(fastifySwaggerUi, {
 		routePrefix: "/docs",
 	});
 
-	app.register(serverAdapter.registerPlugin(), { prefix: "/bull-board" });
+	await app.register(bullboardPlugin);
+	await app.register(cachePlugin);
+	await app.register(router, { prefix: "/api" });
 
-	await app.register(router);
 	Sentry.setupFastifyErrorHandler(app);
-
 	app.setErrorHandler(errorHandler);
 
 	return app;
 };
-
-//TODO: Implementar Caddy ao invés de Greenlock

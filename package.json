@@ -4,14 +4,21 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"dev": "NODE_ENV=development ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/apps/api/server.ts | pino-pretty",
+		"dev": "NODE_ENV=development ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/server.ts | pino-pretty",
 		"dev:worker": "NODE_ENV=development ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/infra/queue/queue.worker.ts",
+		"db:generate": "drizzle-kit generate --config=src/config/drizzle.config.ts",
+		"db:migrate": "drizzle-kit migrate --config=src/config/drizzle.config.ts",
+		"db:push": "drizzle-kit push --config=src/config/drizzle.config.ts",
 		"test": "NODE_ENV=development vitest",
 		"test:watch": "NODE_ENV=development vitest watch",
 		"test:coverage": "NODE_ENV=development vitest run --coverage",
 		"build": "tsc && tsc-alias",
-		"start": "node dist/src/server.js",
-		"start:worker": "node dist/src/infra/queue/queue.worker.js"
+		"start": "node dist/server.js",
+		"start:worker": "node dist/infra/queue/queue.worker.js",
+		"release": "ts-node -r tsconfig-paths/register scripts/release.ts",
+		"release:major": "ts-node -r tsconfig-paths/register scripts/release.ts major",
+		"release:minor": "ts-node -r tsconfig-paths/register scripts/release.ts minor",
+		"release:patch": "ts-node -r tsconfig-paths/register scripts/release.ts patch"
 	},
 	"dependencies": {
 		"@bull-board/api": "^6.20.3",
