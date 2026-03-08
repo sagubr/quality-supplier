@@ -22,5 +22,9 @@ RUN npm ci --omit=dev --prefer-offline --no-audit --no-fund
 
 COPY --from=builder /app/dist ./dist
 
+# ADICIONE ESTA LINHA ABAIXO:
+# Isso copia sua pasta de migrações da raiz do projeto para dentro do container
+COPY ./drizzle ./drizzle
+
 EXPOSE 3000
 CMD ["node", "dist/server.js"]
